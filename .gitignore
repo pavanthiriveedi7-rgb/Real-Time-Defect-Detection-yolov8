@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.egg-info/
+
+# Data (versioned via DVC / external storage, not git)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Models & experiment artifacts
+runs/
+*.pt
+*.onnx
+*.engine
+mlruns/
+mlflow.db
+
+# Logs
+*.log
+logs/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
