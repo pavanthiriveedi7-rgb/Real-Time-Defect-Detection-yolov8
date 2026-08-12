@@ -23,7 +23,13 @@ def read_voc(xml: Path, w: int, h: int):
     root = ET.parse(xml).getroot()
     result = []
     for obj in root.findall("object"):
-        raw = (obj.findtext("name") or "").strip().lower().replace(" ", "_")
+        raw = (
+    (obj.findtext("name") or "")
+    .strip()
+    .lower()
+    .replace(" ", "_")
+    .replace("-", "_")
+)
         name = ALIASES.get(raw, raw)
         if name not in CLASSES: continue
         box = obj.find("bndbox")
