@@ -1,21 +1,36 @@
+# Python environment and cache
 .venv/
 __pycache__/
 *.pyc
+*.cache
 
+# Dataset and generated outputs
 data/
 preview/
 runs/
-models/
 weights/
 
+# Model and deployment files ignored by default
 *.pt
 *.onnx
 *.engine
+
+# Images and annotation files ignored by default
 *.jpg
 *.jpeg
 *.png
 *.bmp
 *.xml
 
+# Environment and logs
 .env
 *.log
+
+# Allow the final internship model
+!models/
+!models/best_32epoch.pt
+
+# Allow Week 2 report figures
+!reports/
+!reports/week2/
+!reports/week2/*.png
