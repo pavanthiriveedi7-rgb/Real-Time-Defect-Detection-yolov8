@@ -1,0 +1,66 @@
+WEEK 3 MODEL PERFORMANCE BENCHMARK
+===================================
+
+Project:
+Real-Time Defect Detection using YOLOv8
+
+Model:
+best_32epoch.pt
+
+Exported Model:
+best_32epoch.onnx
+
+Input Size:
+320 x 320
+
+Execution Device:
+CPU
+
+PyTorch:
+2.13.0+cpu
+
+ONNX Runtime:
+1.29.0
+
+Benchmark Configuration:
+Warm-up runs: 20
+Measured runs: 100
+
+
+PYTORCH YOLOv8
+==============
+
+Average latency: 28.41 ms
+Minimum latency: 21.55 ms
+Maximum latency: 45.35 ms
+Approximate FPS: 35.20
+
+
+ONNX RUNTIME
+============
+
+Average latency: 13.72 ms
+Minimum latency: 8.91 ms
+Maximum latency: 73.83 ms
+Approximate FPS: 72.91
+
+
+COMPARISON
+==========
+
+PyTorch average latency: 28.41 ms
+ONNX average latency: 13.72 ms
+
+ONNX improvement: 51.72%
+
+ONNX speedup: 2.07x
+
+
+CONCLUSION
+==========
+
+ONNX Runtime achieved lower average inference latency
+than the original PyTorch model in the CPU benchmark.
+
+The ONNX model achieved approximately 2.07x speedup
+and 51.72% lower average latency in this benchmark.
