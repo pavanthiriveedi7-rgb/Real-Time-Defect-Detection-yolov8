@@ -1,0 +1,5 @@
+﻿Prediction Test
+
+The exported ONNX model successfully processed NEU test images using ONNX Runtime on CPU. A sample crazing image produced no detection, which is consistent with the low crazing recall observed during validation. This indicates a model-performance limitation rather than an ONNX or system failure.
+
+Next improvement: investigate crazing labels and improve class-specific training.
