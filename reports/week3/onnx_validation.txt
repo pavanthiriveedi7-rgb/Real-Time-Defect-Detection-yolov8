@@ -1,0 +1,23 @@
+﻿Week 3 ONNX Export and Validation
+
+Source model: models/best_32epoch.pt
+Exported model: models/best_32epoch.onnx
+Runtime: ONNX Runtime
+Execution provider: CPUExecutionProvider
+Image size: 320x320
+Validation images: 270
+Validation instances: 622
+
+PyTorch model:
+Precision: 0.684
+Recall: 0.611
+mAP50: 0.680
+mAP50-95: 0.369
+
+ONNX model:
+Precision: 0.676
+Recall: 0.588
+mAP50: 0.654
+mAP50-95: 0.346
+
+Status: ONNX validation successful
