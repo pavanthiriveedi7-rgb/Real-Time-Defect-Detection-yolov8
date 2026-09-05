@@ -1,8 +1,9 @@
 import time
+from io import BytesIO
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Response, UploadFile
 from ultralytics import YOLO
 
 MODEL_PATH = r"models\best_32epoch.onnx"
@@ -27,7 +28,10 @@ def health_check():
 
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    annotate: bool = Query(False)
+):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=400,
@@ -81,6 +85,19 @@ async def predict(file: UploadFile = File(...)):
                     for value in box
                 ]
             })
+
+    if annotate:
+        annotated_image = results[0].plot()
+        _, buffer = cv2.imencode(".jpg", annotated_image)
+
+        return Response(
+            content=bytes(buffer),
+            media_type="image/jpeg",
+            headers={
+                "X-Inference-Ms": str(round(inference_ms, 2)),
+                "X-Detections-Count": str(len(predictions))
+            }
+        )
 
     return {
         "filename": file.filename,
