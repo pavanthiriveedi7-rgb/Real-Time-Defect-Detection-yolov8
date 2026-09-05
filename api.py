@@ -1,3 +1,4 @@
+import logging
 import time
 from io import BytesIO
 
@@ -16,6 +17,14 @@ app = FastAPI(
 )
 
 model = YOLO(MODEL_PATH, task="detect")
+
+logging.basicConfig(
+    filename="api.log",
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+logger = logging.getLogger(__name__)
 
 
 @app.get("/health")
@@ -85,6 +94,12 @@ async def predict(
                     for value in box
                 ]
             })
+
+    logger.info(
+        f"POST /predict | file={file.filename} | "
+        f"inference_ms={round(inference_ms, 2)} | "
+        f"detections={len(predictions)} | annotate={annotate}"
+    )
 
     if annotate:
         annotated_image = results[0].plot()
