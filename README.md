@@ -229,10 +229,10 @@ Or use the API docs:
 This project was developed as part of the **zaalima** engineering program.
 
 - **Pavan Chowdary** – End-to-end pipeline, model training, API, and UI  
-  [GitHub](https://github.com/pavanthiriveedi7-rgb) | [LinkedIn]([YOUR_LINKEDIN_URL](https://www.linkedin.com/in/pavan-kumar-tiruveedhi/))
+  [GitHub](https://github.com/pavanthiriveedi7-rgb) | [LinkedIn]([(https://www.linkedin.com/in/pavan-kumar-tiruveedhi/)])
 
 - **Veeramsetty Naga Malleswari** – Data processing, augmentation, and evaluation  
-  [GitHub]([THEIR_GITHUB_URL](https://github.com/nagamalleswari7)) |[LinkedIn]([THEIR_LINKEDIN_URL](https://www.linkedin.com/in/naga-malleswari-veeramsetty-435a54323?utm_source=share_via&utm_content=profile&utm_medium=member_android))
+  [GitHub]((https://github.com/nagamalleswari7)) |[LinkedIn]([(https://www.linkedin.com/in/naga-malleswari-veeramsetty-435a54323?utm_source=share_via&utm_content=profile&utm_medium=member_android)])
 
 - **Vaithees** – Real-time inference, optimization, and deployment docs  
   [GitHub](https://github.com/Vaithees-R) 
