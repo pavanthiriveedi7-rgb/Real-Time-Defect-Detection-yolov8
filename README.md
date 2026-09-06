@@ -224,15 +224,15 @@ Or use the API docs:
 
 - The current model is CPU-optimized but may produce few or no detections at high confidence thresholds depending on training quality.
 - For better accuracy, retrain or fine-tune the model with high-quality bounding-box labels.
-  ## Team / Collaborators
+ ## Team / Collaborators
 
 This project was developed as part of the **zaalima** engineering program.
 
 - **Pavan Chowdary** – End-to-end pipeline, model training, API, and UI  
-  [GitHub](https://github.com/pavanthiriveedi7-rgb) | [LinkedIn]([(https://www.linkedin.com/in/pavan-kumar-tiruveedhi/)])
+  [GitHub](https://github.com/pavanthiriveedi7-rgb) | [LinkedIn](https://www.linkedin.com/in/pavan-kumar-tiruveedhi/)
 
 - **Veeramsetty Naga Malleswari** – Data processing, augmentation, and evaluation  
-  [GitHub]((https://github.com/nagamalleswari7)) |[LinkedIn]([(https://www.linkedin.com/in/naga-malleswari-veeramsetty-435a54323?utm_source=share_via&utm_content=profile&utm_medium=member_android)])
+  [GitHub](https://github.com/nagamalleswari7) | [LinkedIn](https://www.linkedin.com/in/naga-malleswari-veeramsetty-435a54323?utm_source=share_via&utm_content=profile&utm_medium=member_android)
 
 - **Vaithees** – Real-time inference, optimization, and deployment docs  
-  [GitHub](https://github.com/Vaithees-R) 
+  [GitHub](https://github.com/Vaithees-R)
