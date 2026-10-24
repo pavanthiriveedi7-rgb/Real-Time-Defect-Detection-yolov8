@@ -1,11 +1,9 @@
-numpy>=1.26
+﻿numpy>=1.26
 opencv-python-headless>=4.9
 albumentations>=1.4
 PyYAML>=6.0
 ultralytics>=8.3
-fastapi
-uvicorn
-python-multipart
-opencv-python
-ultralytics
-onnxruntime
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+onnxruntime>=1.17
