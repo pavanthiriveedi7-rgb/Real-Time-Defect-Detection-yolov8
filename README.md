@@ -236,3 +236,19 @@ This project was developed as part of the **zaalima** engineering program.
 
 - **Vaithees** – Real-time inference, optimization, and deployment docs  
   [GitHub](https://github.com/Vaithees-R)
+
+## Model v2 results (YOLOv8s, 640px, test split of 270 images)
+
+| Class | P | R | mAP50 | mAP50-95 |
+|---|---|---|---|---|
+| **all** | 0.734 | 0.708 | **0.750** | **0.419** |
+| crazing | 0.521 | 0.372 | 0.403 | 0.130 |
+| inclusion | 0.731 | 0.811 | 0.799 | 0.421 |
+| patches | 0.847 | 0.857 | 0.921 | 0.591 |
+| pitted_surface | 0.879 | 0.750 | 0.843 | 0.524 |
+| rolled_in_scale | 0.554 | 0.488 | 0.554 | 0.242 |
+| scratches | 0.869 | 0.971 | 0.977 | 0.607 |
+
+Baseline (yolov8n, 32 epochs, 320px): mAP50 0.441, mAP50-95 0.199.
+Weights: `models/best_v2.pt`, `models/best_v2.onnx` (use imgsz=640). Plots in `reports/v2/`.
+Known weak classes: crazing and rolled_in_scale.
