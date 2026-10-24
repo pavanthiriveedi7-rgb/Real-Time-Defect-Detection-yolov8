@@ -1,0 +1,143 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Steel Surface Inspector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e6eaee;--panel:#f6f8f9;--ink:#17212b;--mute:#5a6876;--line:#c9d2da;--acc:#0b6e78;--ok:#17703f;--bad:#b3261e;--warn:#8f5a00;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0f151b;--panel:#17202a;--ink:#e6ecf1;--mute:#93a2af;--line:#2a3643;--acc:#4cc2cf;--ok:#4cc38a;--bad:#ff7b72;--warn:#e5a63c;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:18px 24px;border-bottom:1px solid var(--line)}
+h1{font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em}
+header span{color:var(--mute);font-size:13px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding:20px 24px;max-width:1200px;margin:0 auto}
+@media(max-width:860px){main{grid-template-columns:1fr;padding:14px}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+#stage{position:relative;min-height:340px;display:grid;place-items:center;overflow:hidden}
+#drop{display:grid;gap:6px;place-items:center;text-align:center;padding:48px 20px;width:100%;height:100%;cursor:pointer;border:2px dashed var(--line);border-radius:10px;margin:10px;background:none;color:inherit;font:inherit}
+#drop:hover,#stage.over #drop,#drop:focus-visible{border-color:var(--acc);outline:none}
+#drop b{font-size:18px}#drop small{color:var(--mute)}
+canvas{width:100%;height:auto;display:none;image-rendering:auto}
+#busy{position:absolute;inset:0;background:color-mix(in srgb,var(--panel) 75%,transparent);display:none;place-items:center;font-weight:600}
+#verdict{padding:16px 18px;border-radius:10px;border:1px solid var(--line);border-left:8px solid var(--mute);background:var(--panel)}
+#verdict b{display:block;font-size:30px;font-weight:800;line-height:1.1}
+#verdict.clear{border-left-color:var(--ok)}#verdict.clear b{color:var(--ok)}
+#verdict.review{border-left-color:var(--warn)}#verdict.review b{color:var(--warn)}
+#verdict.reject{border-left-color:var(--bad)}#verdict.reject b{color:var(--bad)}
+#verdict span{color:var(--mute);font-size:13px}
+aside{display:grid;gap:14px;align-content:start}
+.sec{padding:14px 16px}
+.sec h2{font-size:14px;font-weight:600;margin:0 0 10px}
+label{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:10px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+li.f{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:6px;cursor:default}
+li.f:hover,li.f.on{background:color-mix(in srgb,var(--acc) 14%,transparent)}
+li.f i{width:12px;height:12px;border-radius:3px}
+.tally{display:grid;grid-template-columns:110px 1fr 24px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.tally s{height:8px;border-radius:4px;display:block;text-decoration:none}
+.empty{color:var(--mute);font-size:13px;margin:0}
+.btn{font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--acc)}.btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#hist{display:flex;gap:10px;overflow-x:auto;padding:2px 0 6px}
+#hist button{flex:none;width:84px;padding:0;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);cursor:pointer;text-align:left;color:var(--ink);font:12px Archivo,sans-serif}
+#hist button.on{border-color:var(--acc)}
+#hist img{display:block;width:100%;height:60px;object-fit:cover}
+#hist span{display:block;padding:3px 6px}
+#err{color:var(--bad);font-size:13px;margin:8px 0 0;min-height:1em}
+@media(prefers-reduced-motion:no-preference){#verdict{transition:border-color .2s}}
+</style>
+</head>
+<body>
+<header><h1>Steel Surface Inspector</h1><span id="meta">Model not used yet</span></header>
+<main>
+ <section>
+  <div id="stage" class="box">
+   <button id="drop" type="button"><b>Drop a steel surface image here</b><small>or click to choose a file, or paste with Ctrl+V. JPG or PNG, up to 10 MB.</small></button>
+   <canvas id="cv" role="img" aria-label="Inspected image with defect boxes"></canvas>
+   <div id="busy">Inspecting…</div>
+  </div>
+  <input id="file" type="file" accept="image/*" hidden>
+  <p id="err" role="alert"></p>
+  <h2 style="font-size:14px;margin:14px 0 8px">Session</h2>
+  <div id="hist"><p class="empty">Inspected images will appear here.</p></div>
+ </section>
+ <aside>
+  <div id="verdict"><b>No image yet</b><span>Add an image to get a verdict.</span></div>
+  <div class="box sec">
+   <h2>Thresholds</h2>
+   <label>Show detections above <output id="cv1">0.25</output></label>
+   <input id="conf" type="range" min="0.05" max="0.9" step="0.01" value="0.25">
+   <label>Reject when any defect is above <output id="cv2">0.60</output></label>
+   <input id="rej" type="range" min="0.3" max="0.95" step="0.01" value="0.6">
+  </div>
+  <div class="box sec"><h2>Findings</h2><ul id="list"></ul><p id="none" class="empty">Nothing detected yet.</p></div>
+  <div class="box sec"><h2>Defects by type</h2><div id="tally"><p class="empty">No data yet.</p></div></div>
+  <button class="btn" id="exp" disabled>Download results as JSON</button>
+ </aside>
+</main>
+<script>
+const $=s=>document.querySelector(s), COL=['#4f8cff','#e0a100','#2fb57a','#c45ad6','#ef6a4c','#18b6c9'];
+const cv=$('#cv'), ctx=cv.getContext('2d'); let cur=null, hist=[], hover=-1;
+const pick=()=>$('#file').click();
+$('#drop').onclick=pick;
+$('#file').onchange=e=>e.target.files[0]&&run(e.target.files[0]);
+['dragover','dragenter'].forEach(t=>$('#stage').addEventListener(t,e=>{e.preventDefault();$('#stage').classList.add('over')}));
+['dragleave','drop'].forEach(t=>$('#stage').addEventListener(t,e=>{e.preventDefault();$('#stage').classList.remove('over')}));
+$('#stage').addEventListener('drop',e=>e.dataTransfer.files[0]&&run(e.dataTransfer.files[0]));
+addEventListener('paste',e=>{const f=[...e.clipboardData.files][0];f&&run(f)});
+$('#conf').oninput=()=>{$('#cv1').value=(+$('#conf').value).toFixed(2);cur&&render()};
+$('#rej').oninput=()=>{$('#cv2').value=(+$('#rej').value).toFixed(2);cur&&render()};
+$('#exp').onclick=()=>{const v=vis();const b=new Blob([JSON.stringify({file:cur.name,verdict:verdictOf(v),detections:v},null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=cur.name.replace(/\.\w+$/,'')+'-inspection.json';a.click()};
+
+async function run(file){
+ $('#busy').style.display='grid';$('#err').textContent='';
+ const fd=new FormData();fd.append('file',file);fd.append('conf','0.05');
+ try{
+  const r=await fetch('/predict',{method:'POST',body:fd});
+  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.detail||'The server returned '+r.status+'.')}
+  const j=await r.json(),img=new Image();img.src=URL.createObjectURL(file);await img.decode();
+  cur={img,name:file.name,...j};hist.unshift(cur);render();renderHist();
+ }catch(e){$('#err').textContent='Could not inspect this image. '+e.message}
+ finally{$('#busy').style.display='none';$('#file').value=''}
+}
+const vis=()=>cur.detections.filter(d=>d.conf>=+$('#conf').value);
+function verdictOf(v){const t=+$('#rej').value;return !v.length?'clear':v.some(d=>d.conf>=t)?'reject':'review'}
+function render(){
+ const v=vis(),k=800/cur.width;
+ $('#drop').style.display='none';cv.style.display='block';cv.width=800;cv.height=Math.round(cur.height*k);
+ ctx.drawImage(cur.img,0,0,cv.width,cv.height);
+ v.forEach((d,i)=>{const[x1,y1,x2,y2]=d.box.map(n=>n*k),c=COL[d.cls%6],on=i===hover;
+  ctx.lineWidth=on?5:3;ctx.strokeStyle=c;ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+  const t=d.name.replace(/_/g,' ')+' '+Math.round(d.conf*100)+'%';ctx.font='600 15px Archivo,sans-serif';
+  const w=ctx.measureText(t).width+10,ty=y1>24?y1-22:y1;ctx.fillStyle=c;ctx.fillRect(x1,ty,w,22);ctx.fillStyle='#fff';ctx.fillText(t,x1+5,ty+16)});
+ const vd=verdictOf(v),txt={clear:['Clear','No defects above the display threshold.'],review:['Review','Defects found, none above the reject threshold.'],reject:['Reject','At least one defect is above the reject threshold.']}[vd];
+ $('#verdict').className=vd;$('#verdict').innerHTML='<b></b><span></span>';$('#verdict b').textContent=txt[0];$('#verdict span').textContent=txt[1]+' '+v.length+' shown.';
+ $('#list').innerHTML='';$('#none').style.display=v.length?'none':'block';
+ v.forEach((d,i)=>{const li=document.createElement('li');li.className='f'+(i===hover?' on':'');
+  li.innerHTML='<i></i><span></span><b></b>';li.firstChild.style.background=COL[d.cls%6];
+  li.children[1].textContent=d.name.replace(/_/g,' ');li.children[2].textContent=(d.conf*100).toFixed(0)+'%';
+  li.onmouseenter=()=>{hover=i;draw()};li.onmouseleave=()=>{hover=-1;draw()};$('#list').append(li)});
+ const n={};v.forEach(d=>n[d.name]=(n[d.name]||0)+1);const mx=Math.max(1,...Object.values(n));
+ $('#tally').innerHTML=v.length?'':'<p class="empty">No defects at this threshold.</p>';
+ Object.entries(n).forEach(([name,c])=>{const row=document.createElement('div');row.className='tally';
+  row.innerHTML='<span></span><s></s><b></b>';row.children[0].textContent=name.replace(/_/g,' ');
+  row.children[1].style.cssText='width:'+(c/mx*100)+'%;background:'+COL[cur.detections.find(d=>d.name===name).cls%6];row.children[2].textContent=c;$('#tally').append(row)});
+ $('#meta').textContent=cur.name+' · '+cur.width+'×'+cur.height+' · '+cur.inference_ms+' ms';$('#exp').disabled=false;
+}
+const draw=()=>cur&&render();
+function renderHist(){
+ $('#hist').innerHTML='';
+ hist.forEach(h=>{const b=document.createElement('button');b.type='button';b.className=h===cur?'on':'';b.title=h.name;
+  b.innerHTML='<img alt=""><span></span>';b.firstChild.src=h.img.src;
+  const vd=verdictOf(h.detections.filter(d=>d.conf>=+$('#conf').value));b.lastChild.textContent=vd[0].toUpperCase()+vd.slice(1);
+  b.onclick=()=>{cur=h;hover=-1;render();renderHist()};$('#hist').append(b)});
+}
+</script>
+</body>
+</html>

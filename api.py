@@ -1,194 +1,57 @@
-import logging
-import time
-from io import BytesIO
-from typing import List
+﻿"""Steel Surface Inspector API.  Run:  uvicorn api:app --host 0.0.0.0 --port 8000
+Env: MODEL_PATH (default models/best_v2.onnx), IMGSZ (default 640)."""
+import os, threading, time
+from pathlib import Path
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, Query, Response, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from ultralytics import YOLO
 
-MODEL_PATH = r"models\best_32epoch.onnx"
-IMAGE_SIZE = 320
-CONFIDENCE = 0.25
+ROOT = Path(__file__).resolve().parent
+MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT / "models" / "best_v2.onnx"))
+IMGSZ = int(os.getenv("IMGSZ", "640"))
+MAX_BYTES = 10 * 1024 * 1024
 
-app = FastAPI(
-    title="Industrial Defect Detection API",
-    version="1.0.0"
-)
-
-model = YOLO(MODEL_PATH, task="detect")
-
-logging.basicConfig(
-    filename="api.log",
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
-
-logger = logging.getLogger(__name__)
+app = FastAPI(title="Steel Surface Inspector")
+model = YOLO(str(MODEL_PATH), task="detect")
+lock = threading.Lock()  # one inference at a time; the model is not thread-safe
+model.predict(np.zeros((IMGSZ, IMGSZ, 3), np.uint8), imgsz=IMGSZ, verbose=False)  # warm-up
 
 
 @app.get("/health")
-def health_check():
-    return {
-        "status": "ok",
-        "model": MODEL_PATH,
-        "task": "detect"
-    }
-
-
-def _predict_single_image(
-    image_bytes: bytes,
-    filename: str
-):
-    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-
-    if image is None:
-        raise HTTPException(
-            status_code=400,
-            detail=f"The file '{filename}' is not a valid image."
-        )
-
-    start_time = time.perf_counter()
-
-    results = model.predict(
-        source=image,
-        imgsz=IMAGE_SIZE,
-        conf=CONFIDENCE,
-        task="detect",
-        verbose=False
-    )
-
-    inference_ms = (time.perf_counter() - start_time) * 1000
-    detections = results[0].boxes
-    predictions = []
-
-    if detections is not None and len(detections) > 0:
-        for class_id, confidence, box in zip(
-            detections.cls.tolist(),
-            detections.conf.tolist(),
-            detections.xyxy.tolist()
-        ):
-            class_index = int(class_id)
-
-            predictions.append({
-                "class": model.names[class_index],
-                "confidence": round(float(confidence), 4),
-                "box": [
-                    round(float(value), 2)
-                    for value in box
-                ]
-            })
-
-    return {
-        "filename": filename,
-        "inference_ms": round(inference_ms, 2),
-        "detections_count": len(predictions),
-        "detections": predictions
-    }, results[0]
+def health():
+    return {"status": "ok", "model": MODEL_PATH.name, "imgsz": IMGSZ, "classes": list(model.names.values())}
 
 
 @app.post("/predict")
-async def predict(
-    file: UploadFile = File(...),
-    annotate: bool = Query(False)
-):
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=400,
-            detail="Please upload an image file."
-        )
-
-    image_bytes = await file.read()
-
-    if not image_bytes:
-        raise HTTPException(
-            status_code=400,
-            detail="The uploaded file is empty."
-        )
-
-    result_dict, result_obj = _predict_single_image(image_bytes, file.filename)
-
-    logger.info(
-        f"POST /predict | file={file.filename} | "
-        f"inference_ms={result_dict['inference_ms']} | "
-        f"detections={result_dict['detections_count']} | annotate={annotate}"
-    )
-
-    if annotate:
-        annotated_image = result_obj.plot()
-        _, buffer = cv2.imencode(".jpg", annotated_image)
-
-        return Response(
-            content=bytes(buffer),
-            media_type="image/jpeg",
-            headers={
-                "X-Inference-Ms": str(result_dict["inference_ms"]),
-                "X-Detections-Count": str(result_dict["detections_count"])
-            }
-        )
-
-    return result_dict
+def predict(file: UploadFile = File(...), conf: float = Form(0.25), iou: float = Form(0.7)):
+    data = file.file.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES:
+        raise HTTPException(413, "Image is larger than 10 MB.")
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(400, "Could not read this file as an image. Use JPG or PNG.")
+    start = time.perf_counter()
+    with lock:
+        r = model.predict(img, imgsz=IMGSZ, conf=conf, iou=iou, verbose=False)[0]
+    ms = (time.perf_counter() - start) * 1000
+    dets = [
+        {"cls": int(c), "name": model.names[int(c)], "conf": round(float(p), 4),
+         "box": [round(float(v), 1) for v in b]}
+        for c, p, b in zip(r.boxes.cls, r.boxes.conf, r.boxes.xyxy.tolist())
+    ]
+    dets.sort(key=lambda d: -d["conf"])
+    h, w = img.shape[:2]
+    return {"width": w, "height": h, "inference_ms": round(ms, 1), "detections": dets}
 
 
-@app.post("/predict-batch")
-async def predict_batch(
-    files: List[UploadFile] = File(...),
-    annotate: bool = Query(False)
-):
-    if not files:
-        raise HTTPException(
-            status_code=400,
-            detail="No files were uploaded."
-        )
+STATIC = ROOT / "static"
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
-    results_list = []
-    annotated_buffers = []
 
-    for file in files:
-        if not file.content_type or not file.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"File '{file.filename}' is not an image."
-            )
-
-        image_bytes = await file.read()
-
-        if not image_bytes:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File '{file.filename}' is empty."
-            )
-
-        result_dict, result_obj = _predict_single_image(image_bytes, file.filename)
-        results_list.append(result_dict)
-
-        if annotate:
-            annotated_image = result_obj.plot()
-            _, buffer = cv2.imencode(".jpg", annotated_image)
-            annotated_buffers.append((file.filename, buffer))
-
-    total_inference_ms = sum(r["inference_ms"] for r in results_list)
-
-    logger.info(
-        f"POST /predict-batch | files={len(files)} | "
-        f"total_inference_ms={round(total_inference_ms, 2)} | annotate={annotate}"
-    )
-
-    if annotate and len(annotated_buffers) == 1:
-        filename, buffer = annotated_buffers[0]
-        return Response(
-            content=bytes(buffer),
-            media_type="image/jpeg",
-            headers={
-                "X-Inference-Ms": str(results_list[0]["inference_ms"]),
-                "X-Detections-Count": str(results_list[0]["detections_count"])
-            }
-        )
-
-    return {
-        "files_processed": len(files),
-        "total_inference_ms": round(total_inference_ms, 2),
-        "results": results_list
-    }
+@app.get("/")
+def index():
+    return FileResponse(STATIC / "index.html")
