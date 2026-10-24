@@ -3,3 +3,9 @@ opencv-python-headless>=4.9
 albumentations>=1.4
 PyYAML>=6.0
 ultralytics>=8.3
+fastapi
+uvicorn
+python-multipart
+opencv-python
+ultralytics
+onnxruntime
